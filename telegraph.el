@@ -1,9 +1,9 @@
-;;; telegraph.el --- telegra.ph api for emacs
+;;; telegraph.el --- telegra.ph api for emacs  -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2018 Yen-Chin, Lee.
 ;;
 ;; Author: coldnew <coldnew.tw@gmail.com>
-;; Keywords: converience
+;; Package-Requires: ((request "0.2.0"))
 ;; X-URL: http://github.com/coldnew/telegraph.el
 ;; Version: 0.1
 
@@ -40,8 +40,82 @@
 ;;; Code:
 
 (eval-when-compile (require 'cl))
+(require 'url)
+(require 'request)
 
+
+;;;; Local Functions
 
+(cl-defun telegraph--request (&key
+			      (api nil)
+			      (params nil))
+  "Send request to telegra.ph.
+
+==================== ========================================================
+Keyword argument      Explanation
+==================== ========================================================
+API        (string)   telegra.ph's api, like createAccount, getViews
+PARAMS      (alist)   set \"?key=val\" part in URL
+==================== ========================================================"
+  ;; check for arguments
+  (cl-assert (stringp api)  nil "API must be an string. Given %S" api)
+  (cl-assert (listp params) nil "PARAMS must be an alist. Given %S" params)
+  ;; let's make request
+  (let* ((json-object-type 'plist)
+	 (url "https://api.telegra.ph")
+	 (api-url (concat url "/" api "?" (request--urlencode-alist params))))
+    (with-temp-buffer
+      (url-insert-file-contents api-url)
+      (json-read))))
+
+
+;;;; APIs
+
+(cl-defun telegraph-createAccount (&key
+				   (short_name nil)
+				   (author_name nil)
+				   ;; optional
+				   (author_url nil))
+  "Use this method to create a new Telegraph account.
+Most users only need one account, but this can be useful for channel
+administrators who would like to keep individual author names and
+profile links for each of their channels.  On success, returns an
+Account object with the regular fields and an additional
+access_token field.
+
+- SHORT_NAME  (String, 1-32 characters)
+
+  Required.  Account name, helps users with several accounts
+  remember which they are currently using.  Displayed to the user
+  above the 'Edit/Publish' button on Telegra.ph, other users don't
+  see this name.
+
+- AUTHOR_NAME  (String, 0-128 characters)
+
+  Default author name used when creating new articles.
+
+- AUTHOR_URL  (String, 0-512 characters)
+
+  Default profile link, opened when users click on the author's
+  name below the title.  Can be any link, not necessarily to a
+  Telegram profile or channel.
+
+Sample request:
+  https://api.telegra.ph/createAccount?short_name=Sandbox&author_name=Anonymous
+
+API URL:
+  https://telegra.ph/api#createAccount"
+  ;; parameter checker
+  (cl-assert  (stringp short_name) nil  "SHORT_NAME must be an string. Given %S" short_name)
+  (cl-assert  (stringp author_name) nil "AUTHOR_NAME must be an string. Given %S" author_name)
+  ;; let's send request
+  (let ((params `(("short_name" . ,short_name) ("author_name" . ,author_name))))
+    ;; if author_url exist, add to params
+    (when author_url
+      (cl-assert  (stringp author_url) nil "AUTHOR_URL must be an string. Given %S" author_url)
+      (add-to-list 'params '("author_url" . author_url)))
+    ;; make our request
+    (telegraph--request :api "createAccount" :params params)))
 
 (provide 'telegraph)
 ;;; telegraph.el ends here
