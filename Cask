@@ -7,6 +7,8 @@
 
 ;; packages
 (depends-on "request")
+(depends-on "s")
+(depends-on "dash")
 
 ;; Local Variables:
 ;; flycheck-mode: nil

@@ -23,6 +23,16 @@
 (require 'ert)
 (require 'telegraph)
 
+(ert-deftest test-telegraph--parse-html ()
+  "Test parse html-string to sexp."
+  (should (equal '(p nil "Hello, world!" (br nil))
+		 (telegraph--parse-html "<p>Hello, world!<br/></p>")))
+  (should (equal '(p nil (a ((href . "https://telegra.ph/")) "Test link</a>"))
+		 (telegraph--parse-html "<p><a href=\"https://telegra.ph/\">Test link&lt;/a&gt;</a></p>")))
+  (should (equal '(figure nil (img ((src . "/file/6c2ecfdfd6881d37913fa.png"))) (figcaption nil))
+		 (telegraph--parse-html
+		  "<figure><img src=\"/file/6c2ecfdfd6881d37913fa.png\"/><figcaption></figcaption></figure>"))))
+
 (ert-deftest test-createAccount ()
   "Test telegraph:createAccount with "
   (let* ((account (telegraph-createAccount

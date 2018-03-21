@@ -42,6 +42,10 @@
 (eval-when-compile (require 'cl))
 (require 'url)
 (require 'request)
+(require 's)
+(require 'dash)
+(require 'subr-x)
+(require 'json)                         ;buildin
 
 
 ;;;; Local Functions
@@ -67,6 +71,27 @@ PARAMS      (alist)   set \"?key=val\" part in URL
     (with-temp-buffer
       (url-insert-file-contents api-url)
       (json-read))))
+
+
+;;;; HTML <-> Node
+
+(defalias 'telegraph--html-parse-region 'libxml-parse-html-region)
+
+(defun telegraph--parse-html (html-string)
+  "Parse HTML-STRING to sexp.
+
+input:   <p>Hello, world!<br/></p>
+output:  (p nil \"Hello, world!\" (br nil)"
+  (cl-assert (stringp html-string)  nil "HTML-STRING must be an string. Given %S" html-string)
+  ;; result:  (p nil "Hello, world!" (br nil)
+  (caddr
+   ;; result:  (body nil (p nil "Hello, world!" (br nil)))
+   (caddr
+    ;; input:   <p>Hello, world!<br/></p>
+    ;; result:  (html nil (body nil (p nil "Hello, world!" (br nil))))
+    (with-temp-buffer
+      (insert html-string)
+      (telegraph--html-parse-region (point-min) (point-max))))))
 
 
 ;;;; APIs
